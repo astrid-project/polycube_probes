@@ -1,6 +1,6 @@
-# NTP Probe artifacts
+# NTP/DNS Probe artifacts
 
-These artifacts can be used to create the nine nodes (POD) for NTP probing.
+These artifacts can be used to create the nine nodes (POD) for NTP/DNS DDoS attack probing.
 
 
 ## Description

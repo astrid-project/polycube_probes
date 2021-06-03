@@ -14,6 +14,10 @@ data:
             path.config: "/usr/share/logstash/pipeline/polycube_bau.conf"
           - pipeline.id: bau_and_warn
             path.config: "/usr/share/logstash/pipeline/polycube_bau_and_warn.conf"
+          - pipeline.id: dns_bau
+            path.config: "/usr/share/logstash/pipeline/polycube_dns_bau.conf"
+          - pipeline.id: dns_warn
+            path.config: "/usr/share/logstash/pipeline/polycube_dns_warn.conf"
   polycube_bau.conf: |
    input {
        http{
@@ -198,6 +202,190 @@ data:
                    #event['message'] => "event['message']"
            }
    }
+  polycube_dns_bau.conf: |
+   input {
+       http{
+         host => "127.0.0.1"
+         port => 30003
+       }
+   }
+   
+   filter {
+           prune {
+                   whitelist_names => "ingress-metrics"
+           }
+   
+           mutate {
+                   add_field => {
+                           "timestamp" => "123456789"
+                           "node_id" => "node2:Milan RtA"
+                           #"use_case" => [ {
+                           #       "id" => "NTP"
+                           #       "bau" => [ 0 ]
+                           #} ]
+                   }
+           }
+   
+           ruby {
+                   init => '
+                           @old_bau = [0]
+                           @tmp_bau = [0]
+                   '
+                   code => '
+                           bau = []
+                           warn = [ 0 ]
+                           timestamp = 0
+   
+                           event_code = event.get( "ingress-metrics" )
+   
+                           if event_code != nil
+                                   event_code.each do |elem|
+                                           if elem[ "name" ] == "Total DNS packets"
+                                                   @tmp_bau = elem[ "value" ]
+                                                   bau << ( @tmp_bau[0] - @old_bau[0] )
+                                                   if bau[0] < 0
+                                                          bau[0] = 0
+                                                   end
+                                                   @old_bau = @tmp_bau
+                                                   timestamp = elem[ "timestamp" ].to_s
+                                           end
+                                   end
+   
+                                   event.set( "timestamp", timestamp )
+                                   event.set( "use_case", [ Hash[ "id", "DNS", "bau", bau, "warn", warn ] ] )
+   
+                                   event.remove( "ingress-metrics" )
+   
+                                   json_message = event.to_json
+   
+                                   new_json_message = "\""
+                                   json_message.each_char { |c|
+                                           if c == "\""
+                                                   new_json_message << "\\"
+                                           end
+                                           new_json_message << c
+                                   }
+                                   new_json_message << "\""
+   
+                                   event.set( "message", new_json_message )
+                                   event.set( "host", "" )
+   
+                           else
+                                   event.cancel
+   
+                           end
+                   '
+           }
+   
+   }
+   
+   output {
+           kafka {
+                   codec => plain
+                   topic_id => "AstridProxyReadData"
+                   bootstrap_servers => "kafka-service:9092"
+                   message_key => '"%{[timestamp]}"'
+                   #event['message'] => "event['message']"
+           }
+      }
+  polycube_dns_warn.conf : | 
+   input {
+       http{
+         host => "127.0.0.1"
+         port => 30004
+       }
+   }
+   
+   filter {
+           prune {
+                   whitelist_names => "ingress-metrics"
+           }
+   
+           mutate {
+                   add_field => {
+                           "timestamp" => "123456789"
+                           "node_id" => "node2:Milan RtA"
+                           #"use_case" => [ {
+                           #       "id" => "NTP"
+                           #       "bau" => [ 0 ]
+                           #       "warn" => [ 0 ]
+                           #} ]
+                   }
+           }
+   
+           ruby {
+                   init => '
+                           @old_bau = [0]
+                           @tmp_bau = [0]
+                           @old_warn = [0]
+                           @tmp_warn = [0]
+                   '
+                   code => '
+                           bau = []
+                           warn = []
+                           timestamp = 0
+   
+                           event_code = event.get( "ingress-metrics" )
+   
+                           if event_code != nil
+                                   event_code.each do |elem|
+                                           if elem[ "name" ] == "Total DNS packets"
+                                                   @tmp_bau = elem[ "value" ]
+                                                   bau << ( @tmp_bau[0] - @old_bau[0] )
+                                                   if bau[0] < 0 
+                                                           bau[0] = 0
+                                                   end
+                                                   @old_bau = @tmp_bau
+                                                   timestamp = elem[ "timestamp" ].to_s
+                                           end
+                                           if elem[ "name" ] == "Total DNS queries of type ANY"
+                                                   @tmp_warn = elem[ "value"]
+                                                   warn << ( @tmp_warn[0] - @old_warn[0] ) 
+                                                   if warn[0] < 0 
+                                                           warn[0] = 0
+                                                   end
+                                                   @old_warn = @tmp_warn
+                                                   timestamp = elem[ "timestamp" ].to_s
+                                           end
+                                   end
+   
+                                   event.set( "timestamp", timestamp )
+                                   event.set( "use_case", [ Hash[ "id", "DNS", "bau", bau, "warn", warn ] ] )
+   
+                                   event.remove( "ingress-metrics" )
+   
+                                   json_message = event.to_json
+   
+                                   new_json_message = "\""
+                                   json_message.each_char { |c|
+                                           if c == "\""
+                                                   new_json_message << "\\"
+                                           end
+                                           new_json_message << c
+                                   }
+                                   new_json_message << "\""
+   
+                                   event.set( "message", new_json_message )
+                                   event.set( "host", "" )
+   
+                           else
+                                   event.cancel
+   
+                           end
+                   '
+           }
+   
+   }
+   
+   output {
+           kafka {
+                   codec => plain
+                   topic_id => "AstridProxyReadData"
+                   bootstrap_servers => "kafka-service:9092"
+                   message_key => '"%{[timestamp]}"'
+                   #event['message'] => "event['message']"
+           }
+   }
 
   scheduler.sh : |
     #!/bin/sh
@@ -208,12 +396,18 @@ data:
     read_and_send() {
       response_bau=$(curl -s 'http://localhost:9000/polycube/v1/dynmon/ntp_bau/metrics' --max-time 2)
       response_bau_and_warn=$(curl -s 'http://localhost:9000/polycube/v1/dynmon/ntp_bau_and_warn/metrics' --max-time 2 )
+      response_dns_bau=$(curl -s 'http://localhost:9000/polycube/v1/dynmon/dns_bau/metrics' --max-time 2 )
+      response_dns_warn=$(curl -s 'http://localhost:9000/polycube/v1/dynmon/dns_warn/metrics' --max-time 2 )
 
       echo "response_bau: "$response_bau
       echo "response_bau_and_warn: "$response_bau_and_warn
+      echo "response_dns_bau: "$response_dns_bau
+      echo "response_dns_warn: "$response_dns_warn
 
       curl -H "content-type: application/json" -XPUT -s 'http://127.0.0.1:30001' -d "${response_bau}"
       curl -H "content-type: application/json" -XPUT -s 'http://127.0.0.1:30002' -d "${response_bau_and_warn}"
+      curl -H "content-type: application/json" -XPUT -s 'http://127.0.0.1:30003' -d "${response_dns_bau}"
+      curl -H "content-type: application/json" -XPUT -s 'http://127.0.0.1:30004' -d "${response_dns_warn}"
     }
 
     while true

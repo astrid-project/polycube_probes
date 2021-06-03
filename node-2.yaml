@@ -102,6 +102,10 @@ spec:
           path: polycube_bau.conf
         - key: polycube_bau_and_warn.conf
           path: polycube_bau_and_warn.conf
+        - key: polycube_dns_bau.conf
+          path: polycube_dns_bau.conf
+        - key: polycube_dns_warn.conf
+          path: polycube_dns_warn.conf
   - name: config
     configMap:
       name: node-2-configmap
@@ -118,7 +122,7 @@ spec:
           path: pipelines.yml
   - name: scheduler
     configMap:
-      name: node-x-configmap
+      name: node-2-configmap
       defaultMode: 0777
       items:
         - key: scheduler.sh
@@ -135,5 +139,3 @@ spec:
   - name: dev-net-tun
     hostPath:
        path: /dev/net/tun
-
-status: {}
