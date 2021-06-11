@@ -26,6 +26,9 @@ spec:
      #- containerPort: 5044
     resources: {}
     volumeMounts:
+  # - name: tmp-pipelines
+      #mountPath: /usr/share/logstash/tmp/pipeline
+      #mountPath: /usr/share/logstash/pipeline
     - name: pipelines
       mountPath: /usr/share/logstash/pipeline
     - name: config
@@ -90,11 +93,24 @@ spec:
         value: "20s"
       - name: LCP_LOG_CONFIG
         value: "log.yaml"
-    resources: {}
+    volumeMounts:
+    - name: pipelines
+      mountPath: /usr/share/logstash/pipeline
+  initContainers:
+  - image: byrnedo/alpine-curl:latest
+    name: copy-files
+    command: ['sh', '-c', 'if ! [ "$(ls -A /usr/share/logstash/pipeline)" ]; then cp /usr/share/logstash/tmp/pipeline/* /usr/share/logstash/pipeline/ ; fi;']
+    volumeMounts:
+    - name: tmp-pipelines
+      mountPath: /usr/share/logstash/tmp/pipeline
+      #mountPath: /usr/share/logstash/pipeline
+    - name: pipelines
+      mountPath: /usr/share/logstash/pipeline
+
   #restartPolicy: OnFailure
   restartPolicy: Never
   volumes:
-  - name: pipelines
+  - name: tmp-pipelines
     configMap:
       name: node-5-configmap
       items:
@@ -106,6 +122,9 @@ spec:
           path: polycube_dns_bau.conf
         - key: polycube_dns_warn.conf
           path: polycube_dns_warn.conf
+  - name: pipelines
+    persistentVolumeClaim:
+      claimName: node-5-pv-claim 
   - name: config
     configMap:
       name: node-5-configmap

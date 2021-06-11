@@ -5,7 +5,8 @@ These artifacts can be used to create the nine nodes (POD) for NTP/DNS DDoS atta
 
 ## Description
 
-For every node there are three files:
+For every node there are four files:
+* storage: create (if not exist) and connect POD to persistent storage
 * pod: create the pod and its containers (polycube, lcp, logstash and scheduler). For example "node-0.yaml"
 * configmap: load configmap of the pod. For example "node-0-configmap.yaml"
 * service: description of service for specific pod. For example "node-0-service.yaml"
@@ -22,7 +23,7 @@ By default this value is set to 3 seconds ("3s").
 
 ## How to use
 
-Warning: always load configmap before launch the pod creation
+Warning: always load artifacts with this order: storages -> config-maps -> pods -> services
 
 Launch the commands:
 ```
@@ -30,6 +31,10 @@ kubectl apply -f <ARTIFACT-FILE>.yaml
 ```
 
 For example if you wanto to load the configmap of the "node 0":
+```
+kubectl apply -f node-0-storage.yaml
+```
+
 ```
 kubectl apply -f node-0-configmap.yaml
 ```

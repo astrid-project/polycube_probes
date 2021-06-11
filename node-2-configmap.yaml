@@ -7,7 +7,7 @@ data:
   logstash.yml: |
         config.reload:
             automatic: true
-            interval: 60s
+            interval: 5s
         http.host: "0.0.0.0"
   pipelines.yml: |
           - pipeline.id: bau
