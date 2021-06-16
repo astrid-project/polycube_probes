@@ -392,6 +392,8 @@ data:
     set -e
 
     polling=$POLLING_TIME
+    polling_time_file=/usr/share/scheduler/pollingtime.txt
+    previous_stat=0
 
     read_and_send() {
       response_bau=$(curl -s 'http://localhost:9000/polycube/v1/dynmon/ntp_bau/metrics' --max-time 2)
@@ -412,6 +414,19 @@ data:
 
     while true
     do
+      if [ -f "$polling_time_file" ];
+      then
+        actual_stat=`stat $polling_time_file -c %Y`
+        if [ $actual_stat -ne $previous_stat ];
+        then
+          polling=`cat $polling_time_file`
+          previous_stat=$actual_stat
+        fi
+      else
+        echo "$polling" > $polling_time_file
+      fi
+
+
       read_and_send &
       echo "wait for "$polling" second..."
       sleep $polling
