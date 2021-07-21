@@ -7,7 +7,7 @@ metadata:
   namespace: astrid-kube
 spec:
   containers:
-  - image: byrnedo/alpine-curl:latest
+  - image: dwdraju/alpine-curl-jq:latest
     name: scheduler
     env:
       - name: POLLING_TIME
