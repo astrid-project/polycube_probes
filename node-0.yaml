@@ -111,6 +111,9 @@ spec:
     - name: pipelines
       mountPath: /usr/share/logstash/pipeline
 
+  dnsConfig:
+    searches:
+      - astrid-kube.svc.cluster.local
   #restartPolicy: OnFailure
   restartPolicy: Never
   volumes:

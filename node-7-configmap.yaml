@@ -459,6 +459,7 @@ data:
          previous_stat=$actual_stat
        fi
      else
+       mkdir -p /usr/share/scheduler/
        echo "$polling" > $polling_time_file
      fi
    
