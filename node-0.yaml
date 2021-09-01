@@ -7,6 +7,13 @@ metadata:
   namespace: astrid-kube
 spec:
   containers:
+  - image: astridproject/packetbeat:7.13.4-service
+    name: packetbeat
+    volumeMounts:
+      - name: pipelines
+        mountPath: /usr/share/packetbeat/packetbeat.yml
+        subPath: packetbeat.yml
+
   - image: dwdraju/alpine-curl-jq:latest
     name: scheduler
     env:
@@ -103,7 +110,7 @@ spec:
   initContainers:
   - image: byrnedo/alpine-curl:latest
     name: copy-files
-    command: ['sh', '-c', 'if ! [ "$(ls -A /usr/share/logstash/pipeline)" ]; then cp /usr/share/logstash/tmp/pipeline/* /usr/share/logstash/pipeline/ ; fi;']
+    command: ['sh', '-c', 'if ! [ "$(ls -A /usr/share/logstash/pipeline)" ]; then cp /usr/share/logstash/tmp/pipeline/* /usr/share/logstash/pipeline/ ; fi; if ! [ "$(ls -A /usr/share/logstash/pipeline/packetbeat.yml)" ]; then cp /usr/share/logstash/tmp/pipeline/packetbeat.yml /usr/share/logstash/pipeline/ ; fi;']
     volumeMounts:
     - name: tmp-pipelines
       mountPath: /usr/share/logstash/tmp/pipeline
@@ -129,6 +136,8 @@ spec:
           path: polycube_dns_bau.conf
         - key: polycube_dns_warn.conf
           path: polycube_dns_warn.conf
+        - key: packetbeat.yml
+          path: packetbeat.yml
   - name: pipelines
     persistentVolumeClaim:
       claimName: node-0-pv-claim 
